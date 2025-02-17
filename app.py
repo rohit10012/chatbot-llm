@@ -7,23 +7,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ✅ Configuration Variables
-DEFAULT_APP_NAME = "Groq AI Chatbot"  # Change as needed
-DEFAULT_MODEL = "llama3-8b-8192"  # Default model
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your-api-key-here")  # Load API key from .env or hardcode it
+DEFAULT_APP_NAME = os.getenv("APP_NAME", "Groq AI Chatbot")
+DEFAULT_MODEL = os.getenv("MODEL_NAME", "llama3-8b-8192")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not GROQ_API_KEY:
+    st.error("❌ Missing API Key. Set GROQ_API_KEY in your environment variables.")
 
 # ✅ Streamlit UI
 st.set_page_config(page_title=DEFAULT_APP_NAME, layout="wide")
 st.title(st.text_input("Enter your application name:", DEFAULT_APP_NAME))
 
 # ✅ Model Selection
-available_models = ["llama3-8b-8192", "mixtral-8x7b", "gemma-7b"]  # Add more as needed
+available_models = ["llama3-8b-8192", "mixtral-8x7b", "gemma-7b"]
 selected_model = st.selectbox("Choose AI Model", available_models, index=0)
 
-# ✅ Initialize chat history
+# ✅ Chat Memory
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
 
-# ✅ Chat Input
+# ✅ User Input
 user_input = st.text_area("Your Message", placeholder="Ask something...")
 
 # ✅ API Request Function
@@ -33,10 +36,7 @@ def query_groq_api(messages):
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
-    data = {
-        "model": selected_model,
-        "messages": messages
-    }
+    data = {"model": selected_model, "messages": messages}
 
     response = requests.post(url, json=data, headers=headers)
     if response.status_code == 200:
@@ -52,7 +52,7 @@ if st.button("Send"):
         with st.spinner("Thinking..."):
             response = query_groq_api(st.session_state.messages)
             st.session_state.messages.append({"role": "assistant", "content": response})
-        
+
         # ✅ Display chat history
         for msg in st.session_state.messages:
             if msg["role"] != "system":
